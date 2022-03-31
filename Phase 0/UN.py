@@ -25,48 +25,61 @@ class Newcastle(BaseCrawler):
 
         department_page_content = requests.get(department_url).text
         department_soup = BeautifulSoup(department_page_content, 'html.parser')
+        Department_Name = department_soup.find('h1').text
+        tbody_elements = department_soup.find('tbody')
+        course_elements = tbody_elements.find_all('tr')
 
-        courses = department_soup.find_all(class_='courseblock')
-
-        return courses, Department_Name, Course_Homepage
+        return course_elements, Department_Name, Course_Homepage
 
     def get_course_data(self, course):
-        Course_Title = course.find(class_="title").text
+        Course_Title = course.find_all('td')[1].text
 
-        Unit_Count = course.find(class_="hours").text
-        Unit_Count = Unit_Count[:-5].rstrip()
+        Unit_Count = course.find_all('td')[4].text
+        Unit_Count = Unit_Count[:2].rstrip()
 
-        Description = course.find(class_='courseblockdesc').text
+        #Description = course.find(class_='courseblockdesc').text
 
-        course_sections = course.find_all(class_='course-section')
+        #course_sections = course.find_all(class_='course-section')
 
         Objective = None
         Outcome = None
         Professor = None
         Required_Skills = None
 
-        for section in course_sections:
-            inner_sections = section.find_all('p')
-            for inner_section in inner_sections:
-                inner_section_title = inner_section.find('strong')
+        # for section in course_sections:
+        #     inner_sections = section.find_all('p')
+        #     for inner_section in inner_sections:
+        #         inner_section_title = inner_section.find('strong')
 
-                if inner_section_title.text == "Course Objectives:":
-                    inner_section_title.decompose()
-                    Objective = inner_section.text.strip()
+        #         if inner_section_title.text == "Course Objectives:":
+        #             inner_section_title.decompose()
+        #             Objective = inner_section.text.strip()
 
-                if inner_section_title.text == "Student Learning Outcomes:":
-                    inner_section_title.decompose()
-                    Outcome = inner_section.text.strip()
+        #         if inner_section_title.text == "Student Learning Outcomes:":
+        #             inner_section_title.decompose()
+        #             Outcome = inner_section.text.strip()
 
-                if inner_section_title.text == "Instructor:":
-                    inner_section_title.decompose()
-                    Professor = inner_section.text.strip()
+        #         if inner_section_title.text == "Instructor:":
+        #             inner_section_title.decompose()
+        #             Professor = inner_section.text.strip()
 
-                if inner_section_title.text == "Prerequisites:":
-                    inner_section_title.decompose()
-                    Required_Skills = inner_section.text.strip()
+        #         if inner_section_title.text == "Prerequisites:":
+        #             inner_section_title.decompose()
+        #             Required_Skills = inner_section.text.strip()
+
+        Objective, Outcome, Professor, Required_Skills, Description = self.get_course_details(course)
 
         return Course_Title, Unit_Count, Objective, Outcome, Professor, Required_Skills, Description
+
+
+    def get_course_details(self, course):
+        course_url = course.find('a').get('href')
+        course_url = course_url[2:len(course_url)]
+        course_url = "http://" + course_url
+        course_page_content = requests.get(course_url).text
+        course_soup = BeautifulSoup(course_page_content, 'html.parser')
+
+
 
     def handler(self):
         response = requests.get(self.Course_Page_Url)
