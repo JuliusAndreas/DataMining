@@ -12,7 +12,6 @@ class Newcastle(BaseCrawler):
     Abbreviation = "NU"
     University_Homepage = "https://www.ncl.ac.uk/"
 
-    # Below fields didn't find in the website
     Prerequisite = None
     References = None
     Scores = None
@@ -37,8 +36,6 @@ class Newcastle(BaseCrawler):
         Unit_Count = course.find_all('td')[4].text
         Unit_Count = Unit_Count[:2].rstrip()
 
-        #Description = course.find(class_='courseblockdesc').text
-
         #course_sections = course.find_all(class_='course-section')
 
         Objective = None
@@ -46,46 +43,45 @@ class Newcastle(BaseCrawler):
         Professor = None
         Required_Skills = None
 
-        # for section in course_sections:
-        #     inner_sections = section.find_all('p')
-        #     for inner_section in inner_sections:
-        #         inner_section_title = inner_section.find('strong')
-
-        #         if inner_section_title.text == "Course Objectives:":
-        #             inner_section_title.decompose()
-        #             Objective = inner_section.text.strip()
-
-        #         if inner_section_title.text == "Student Learning Outcomes:":
-        #             inner_section_title.decompose()
-        #             Outcome = inner_section.text.strip()
-
-        #         if inner_section_title.text == "Instructor:":
-        #             inner_section_title.decompose()
-        #             Professor = inner_section.text.strip()
-
-        #         if inner_section_title.text == "Prerequisites:":
-        #             inner_section_title.decompose()
-        #             Required_Skills = inner_section.text.strip()
-
         Objective, Outcome, Professor, Required_Skills, Description = self.get_course_details(course)
 
         return Course_Title, Unit_Count, Objective, Outcome, Professor, Required_Skills, Description
 
 
     def get_course_details(self, course):
+
+        Objective = None
+        Outcome = None
+        Professor = None
+        Required_Skills = None
+        Description = None
+
         course_url = course.find('a').get('href')
         course_url = course_url[2:len(course_url)]
         course_url = "http://" + course_url
         course_page_content = requests.get(course_url).text
         course_soup = BeautifulSoup(course_page_content, 'html.parser')
-
-
+        Objective = course_soup.find('h4').find_next_sibling().text
+        Professor = course_soup.find("meta", {"name":"ncl_module"}).find_all("ul")[2].find("li").text[17:].split(',')[0].lstrip()
+        
+        assess_div = None
+        for div in course_soup.find_all('div'):
+            if(div.find('h5') != None):
+                if(div.find('h5').text == "Assessment Rationale And Relationship"):
+                    assess_div = div
+        self.Projects = assess_div.find('p').text
+        
+        teaching_div = None
+        for div in course_soup.find_all('div'):
+            if(div.find('h5') != None):
+                if(div.find('h5').text == "Teaching Rationale And Relationship"):
+                    teaching_div = div
+        Description = teaching_div.find('p').text
+        return Objective, Outcome, Professor, Required_Skills, Description
 
     def handler(self):
         response = requests.get(self.Course_Page_Url)
         soup = BeautifulSoup(response.content, 'html.parser')
-
-        # departments = soup.find(id='atozindex').find_all('li')
 
         ul_elements = soup.find_all('ul')
         ul_deps = ul_elements[25:28]

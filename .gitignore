@@ -71,6 +71,9 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+# Test stuff
+.Phase 0/test.ipynb
+
 # PyBuilder
 target/
 
@@ -127,3 +130,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+Phase 0/test.ipynb
