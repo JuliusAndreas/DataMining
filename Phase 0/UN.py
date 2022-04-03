@@ -1,4 +1,4 @@
-import BaseCrawler
+from BaseCrawler import BaseCrawler
 import requests
 from bs4 import BeautifulSoup
 import logging
@@ -31,21 +31,29 @@ class Newcastle(BaseCrawler):
         return course_elements, Department_Name, Course_Homepage
 
     def get_course_data(self, course):
-        Course_Title = course.find_all('td')[1].text
 
-        Unit_Count = course.find_all('td')[4].text
-        Unit_Count = Unit_Count[:2].rstrip()
+        try:
+            Course_Title = ""
+            Unit_Count = ""
 
-        #course_sections = course.find_all(class_='course-section')
+            if(len(course.find_all('td'))>=2):
+                Course_Title = course.find_all('td')[1].text
 
-        Objective = None
-        Outcome = None
-        Professor = None
-        Required_Skills = None
+            if(len(course.find_all('td'))==5):
+                Unit_Count = course.find_all('td')[4].text
+                if(Unit_Count != None and len(Unit_Count)>=4):
+                    Unit_Count = Unit_Count[:3].rstrip()
+        except:
+            print("Unknown exception occured")
+        else:
+            Objective = None
+            Outcome = None
+            Professor = None
+            Required_Skills = None
 
-        Objective, Outcome, Professor, Required_Skills, Description = self.get_course_details(course)
+            Objective, Outcome, Professor, Required_Skills, Description = self.get_course_details(course)
 
-        return Course_Title, Unit_Count, Objective, Outcome, Professor, Required_Skills, Description
+            return Course_Title, Unit_Count, Objective, Outcome, Professor, Required_Skills, Description
 
 
     def get_course_details(self, course):
@@ -61,9 +69,17 @@ class Newcastle(BaseCrawler):
         course_url = "http://" + course_url
         course_page_content = requests.get(course_url).text
         course_soup = BeautifulSoup(course_page_content, 'html.parser')
-        Objective = course_soup.find('h4').find_next_sibling().text
-        Professor = course_soup.find("meta", {"name":"ncl_module"}).find_all("ul")[2].find("li").text[17:].split(',')[0].lstrip()
         
+        h4_elements = course_soup.find_all('h4')
+        if(len(h4_elements) != 0):
+            for element in h4_elements:
+                if(element != None and element.text == "Aims"):
+                    Objective = element.find_next_sibling().text
+                    break
+
+        if(len(course_soup.find("meta", {"name":"ncl_module"}).find_all("ul"))>=3):
+            Professor = course_soup.find("meta", {"name":"ncl_module"}).find_all("ul")[2].find("li").text[17:].split(',')[0].lstrip()
+
         assess_div = None
         for div in course_soup.find_all('div'):
             if(div.find('h5') != None):
@@ -90,6 +106,7 @@ class Newcastle(BaseCrawler):
             temp = ul_dep.find_all('a')
             for element in temp:
                 departments.append(element.get('href'))
+        del departments[-5]
         
         for department in departments:
             courses, Department_Name, Course_Homepage = self.get_courses_of_department(department)
